@@ -306,13 +306,23 @@ class LinkedinEasyApply:
         easy_apply_button = None
 
         try:
-            easy_apply_button = self.browser.find_element(By.CLASS_NAME, 'jobs-apply-button')
-        except:
+            # Busca el botón "Easy Apply" por clase y texto
+            easy_apply_buttons = self.browser.find_elements(By.CLASS_NAME, 'jobs-apply-button')
+            easy_apply_button = None
+            for btn in easy_apply_buttons:
+                if "easy apply" in btn.text.lower() or "solicitud sencilla" in btn.text.lower():
+                    easy_apply_button = btn
+                    break
+            if not easy_apply_button:
+                print("No Easy Apply button found, skipping job.")
+                return False
+        except Exception:
+            print("No Easy Apply button found, skipping job.")
             return False
 
         try:
             job_description_area = self.browser.find_element(By.CLASS_NAME, "jobs-search__job-details--container")
-            print (f"{job_description_area}")
+            print(f"{job_description_area}")
             self.scroll_slow(job_description_area, end=1600)
             self.scroll_slow(job_description_area, end=1600, step=400, reverse=True)
         except:
