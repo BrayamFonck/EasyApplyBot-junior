@@ -331,6 +331,19 @@ experience:
  AWS Production Issues: 8
  Documentación Técnica: 1  # Ajusta este valor según tu experiencia real (0-99)
  Technical Documentation: 1
+ ML: 1  # Machine Learning experience
+ Machine Learning: 1
+ SQL: 1
+ sql: 1
+ base de datos: 1
+ base de datos sql: 1
+ ETL: 1
+ etl: 1
+ extraer transformar cargar: 1
+ distribución: 1  # Ajusta este valor según tu experiencia real (0-99)
+ distributoría: 1
+ distribution: 1
+
 
 
 

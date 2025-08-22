@@ -488,6 +488,8 @@ class LinkedinEasyApply:
                 if 'driver\'s licence' in radio_text or 'driver\'s license' in radio_text:
                     answer = self.get_answer('driversLicence')
 
+                elif 'gender identity' in radio_text.lower():
+                    answer = 'man'
                 elif any(keyword in radio_text.lower() for keyword in
                          [
                              'Aboriginal', 'native', 'indigenous', 'tribe', 'first nations',
@@ -560,6 +562,78 @@ class LinkedinEasyApply:
 
                 elif 'sponsor' in radio_text:
                     answer = self.get_answer('requireVisa')
+                
+                elif ('cuántos años de experiencia' in radio_text or 
+                    'how many years of experience' in radio_text or
+                    'years of experience' in radio_text or
+                    'experiencia tienes como' in radio_text or
+                    'experiencia tienes con' in radio_text):
+                    # Buscar si tenemos experiencia configurada para esta tecnología
+                    answer = 'no'  # Por defecto
+                    experience_years = 0
+                    
+                    # Buscar en las tecnologías configuradas
+                    for experience in self.experience:
+                        if experience.lower() in radio_text and self.experience[experience] > 0:
+                            experience_years = int(self.experience[experience])
+                            # Asegurarse de que esté en el rango 0-99
+                            if experience_years > 99:
+                                experience_years = 99
+                            elif experience_years < 0:
+                                experience_years = 0
+                            
+                            # Buscar opciones que contengan el número de años
+                            for option in radio_options:
+                                if str(experience_years) in option or (experience_years == 0 and 'no' in option.lower()):
+                                    answer = option
+                                    break
+                            
+                            if answer == 'no':  # Si no encontró opción específica pero tiene experiencia
+                                answer = 'yes'
+                            break
+                    
+                    # Si no encontramos la tecnología específica, registrarla como pregunta no preparada
+                    if experience_years == 0:
+                        self.record_unprepared_question("radio", radio_text)
+                        # Si tenemos experiencia por defecto, usar ese valor
+                        if self.experience_default > 0:
+                            experience_years = min(self.experience_default, 99)
+                            answer = 'yes'
+
+                elif 'location' in radio_text or 'city' in radio_text or 'where are you located' in radio_text or 'ubicación' in radio_text or 'ciudad' in radio_text:
+                    # Buscar si la pregunta contiene alguna ciudad/ubicación de nuestras preferencias
+                    answer = 'no'  # Por defecto
+                    
+                    # Buscar en nuestras ubicaciones configuradas
+                    for location in self.locations:
+                        if location.lower() in radio_text:
+                            answer = 'yes'
+                            break
+                    
+                    # Si no encontramos coincidencia, pero tenemos Colombia como ubicación preferida
+                    if 'colombia' in [loc.lower() for loc in self.locations]:
+                        # Buscar opciones que contengan Colombia o ciudades colombianas
+                        for option in radio_options:
+                            if any(city in option.lower() for city in ['colombia', 'bogotá', 'bogota', 'medellín', 'medellin', 'cali', 'barranquilla']):
+                                answer = option
+                                break
+                    
+                    # Si aún no tenemos respuesta, registrar como pregunta no preparada
+                    if answer == 'no':
+                        self.record_unprepared_question("radio", radio_text)
+                        # Usar la primera opción como fallback
+                        answer = radio_options[0] if radio_options else 'no'
+                
+                elif 'experience' in radio_text:
+                    # Para otras preguntas de experiencia más generales
+                    answer = 'no'
+                    for experience in self.experience:
+                        if experience.lower() in radio_text and self.experience[experience] > 0:
+                            answer = 'yes'
+                            break
+                    if answer == 'no':
+                        self.record_unprepared_question("radio", radio_text)
+
                 else:
                     answer = radio_options[len(radio_options) - 1]
                     self.record_unprepared_question("radio", radio_text)
@@ -870,6 +944,59 @@ class LinkedinEasyApply:
                         choice = options[len(options) - 1]
                     self.select_dropdown(dropdown_field, choice)
 
+                elif ('proficiency' in question_text or
+                    'nivel de inglés' in question_text or
+                    'nivel de idioma' in question_text or
+                    'english' in question_text or
+                    'inglés' in question_text or
+                    'spanish' in question_text or
+                    'español' in question_text):
+                    proficiency = "None"
+                    # Busca el idioma en la pregunta
+                    for language in self.languages:
+                        if (language.lower() in question_text or 
+                            ('english' in question_text and language.lower() in ['english', 'inglés']) or 
+                            ('inglés' in question_text and language.lower() in ['english', 'inglés']) or
+                            ('spanish' in question_text and language.lower() in ['spanish', 'español']) or
+                            ('español' in question_text and language.lower() in ['spanish', 'español'])):
+                            
+                            config_proficiency = self.languages[language].lower()
+                            
+                            # Mapear los niveles de config.yaml a las opciones del dropdown
+                            if config_proficiency in ['native or bilingual', 'native', 'bilingual']:
+                                proficiency = 'Fluent'  # Para español nativo, seleccionar Fluent
+                            elif config_proficiency == 'professional':
+                                proficiency = 'Advanced'
+                            elif config_proficiency == 'conversational':
+                                proficiency = 'Intermediate'
+                            elif config_proficiency == 'none':
+                                proficiency = 'Basic'
+                            else:
+                                proficiency = self.languages[language]  # Usar el valor original si no coincide
+                            break
+                    
+                    # Verificar que la opción existe en el dropdown
+                    choice = ""
+                    for option in options:
+                        if proficiency.lower() in option.lower():
+                            choice = option
+                            break
+                    
+                    if choice == "":
+                        # Si no encuentra la opción exacta, buscar la más alta disponible
+                        for preferred in ['Fluent', 'Advanced', 'Professional', 'Intermediate', 'Conversational', 'Basic']:
+                            for option in options:
+                                if preferred.lower() in option.lower():
+                                    choice = option
+                                    break
+                            if choice:
+                                break
+                        
+                        if choice == "":
+                            choice = options[-1]  # Última opción como fallback
+                    
+                    self.select_dropdown(dropdown_field, choice)
+                
                 elif 'citizenship' in question_text:
                     answer = self.get_answer('legallyAuthorized')
                     choice = ""
@@ -913,6 +1040,21 @@ class LinkedinEasyApply:
                 elif 'email' in question_text:
                     continue  # assume email address is filled in properly by default
 
+                elif 'ml position' in question_text or 'machine learning' in question_text:
+                    answer = 'no'
+                    if 'ML' in self.experience and self.experience['ML'] > 0:
+                        answer = 'yes'
+                    elif 'Machine Learning' in self.experience and self.experience['Machine Learning'] > 0:
+                        answer = 'yes'
+                    
+                    choice = ""
+                    for option in options:
+                        if answer in option.lower():
+                            choice = option
+                    if choice == "":
+                        choice = options[len(options) - 1]
+                    self.select_dropdown(dropdown_field, choice)
+                
                 elif 'experience' in question_text or 'understanding' in question_text or 'familiar' in question_text or 'comfortable' in question_text or 'able to' in question_text:
                     answer = 'no'
                     for experience in self.experience:
@@ -929,6 +1071,40 @@ class LinkedinEasyApply:
                             choice = option
                     if choice == "":
                         choice = options[len(options) - 1]
+                    self.select_dropdown(dropdown_field, choice)
+
+                elif ('c1 level' in question_text or 
+                      'c2 level' in question_text or 
+                      'b2 level' in question_text or 
+                      'minimum c1' in question_text or
+                      'minimum c2' in question_text or
+                      'minimum b2' in question_text):
+                    # Determinar el nivel del idioma basado en la configuración
+                    answer = 'si'  # Por defecto
+                    
+                    # Buscar el idioma específico en la pregunta
+                    if 'english' in question_text or 'inglés' in question_text:
+                        if 'english' in self.languages:
+                            proficiency_level = self.languages['english'].lower()
+                            # Si el nivel es Professional o Native, asumir que es C1 o superior
+                            if proficiency_level in ['professional', 'native or bilingual']:
+                                answer = 'yes'
+                    
+                    # Si no encontramos el idioma específico, usar el nivel de inglés por defecto
+                    elif 'english' in self.languages:
+                        proficiency_level = self.languages['english'].lower()
+                        if proficiency_level in ['professional', 'native or bilingual']:
+                            answer = 'yes'
+                    
+                    choice = ""
+                    for option in options:
+                        if answer.lower() in option.lower():
+                            choice = option
+                            break
+                    
+                    if choice == "":
+                        choice = options[-1]  # Usar la última opción como fallback
+                    
                     self.select_dropdown(dropdown_field, choice)
 
                 else:
