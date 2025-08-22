@@ -502,6 +502,9 @@ class LinkedinEasyApply:
 
                 elif 'authorized' in radio_text or 'authorised' in radio_text or 'legally' in radio_text:
                     answer = self.get_answer('legallyAuthorized')
+                
+                elif 'stayed up late' in radio_text or 'worked a weekend' in radio_text or 'ship something' in radio_text:
+                    answer = 'yes'  # Siempre responder "sí" a esta pregunta    
 
                 elif any(keyword in radio_text.lower() for keyword in
                          ['certified', 'certificate', 'cpa', 'chartered accountant', 'qualification']):
@@ -589,7 +592,13 @@ class LinkedinEasyApply:
                     raise Exception("Could not determine input type of input field!")
 
                 to_enter = ''
-                if 'experience' in question_text or 'how many years in' in question_text:
+                if ('experience' in question_text or
+                    'how many years in' in question_text or
+                    'production deployment' in question_text or
+                    'deployments' in question_text or
+                    'merging code' in question_text or
+                    'infrastructure' in question_text or
+                    'monitoring post-deploy' in question_text):
                     no_of_years = None
                     for experience in self.experience:
                         if experience.lower() in question_text:
@@ -600,6 +609,32 @@ class LinkedinEasyApply:
                         no_of_years = int(self.experience_default)
                     to_enter = no_of_years
 
+                # Agregar después del bloque anterior este nuevo bloque para escalas numéricas
+                elif ('scale' in question_text and 
+                    ('1-10' in question_text or '1–10' in question_text or '1 to 10' in question_text)):
+                    # Buscar referencias a AWS, debugging, etc.
+                    if 'aws' in question_text or 'debugging' in question_text or 'production issues' in question_text:
+                        scale_value = None
+                        for experience_key in ['AWS Debugging', 'AWS Production Issues', 'AWS', 'Cloud']:
+                            if experience_key in self.experience:
+                                # Si el valor está en experience, usarlo (asumiendo que está en escala 1-10)
+                                scale_value = int(self.experience[experience_key])
+                                # Si el valor es mayor a 10, limitarlo a 10 para la escala
+                                if scale_value > 10:
+                                    scale_value = 10
+                                break
+                        
+                        # Si no encontró un valor específico, usar un valor predeterminado de 8
+                        if scale_value is None:
+                            scale_value = 8
+                            self.record_unprepared_question(text_field_type, question_text)
+                        
+                        to_enter = scale_value
+                    else:
+                        # Para otras preguntas de escala que no sean sobre AWS
+                        to_enter = 8
+                        self.record_unprepared_question(text_field_type, question_text)
+                
                 elif 'grade point average' in question_text:
                     to_enter = self.university_gpa
 
@@ -626,6 +661,10 @@ class LinkedinEasyApply:
 
                 elif 'website' in question_text or 'github' in question_text or 'portfolio' in question_text:
                     to_enter = self.personal_info['Website']
+                    
+                # Añade esta condición
+                elif 'stayed up late' in question_text or 'worked a weekend' in question_text or 'ship something' in question_text:
+                    to_enter = "Yes, I have worked weekends and late nights to meet critical deadlines and deliver important projects."    
 
                 elif 'notice' in question_text or 'weeks' in question_text:
                     if text_field_type == 'numeric':
@@ -679,8 +718,11 @@ class LinkedinEasyApply:
                     'english' in question_text or
                     'inglés' in question_text):
                     proficiency = "None"
+                    # Busca el idioma en la pregunta
                     for language in self.languages:
-                        if language.lower() in question_text or language.lower() in ['english', 'inglés']:
+                        if language.lower() in question_text or \
+                        ('english' in question_text and language.lower() in ['english', 'inglés']) or \
+                        ('inglés' in question_text and language.lower() in ['english', 'inglés']):
                             proficiency = self.languages[language]
                             break
                     self.select_dropdown(dropdown_field, proficiency)
