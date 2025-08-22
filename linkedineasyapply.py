@@ -965,19 +965,19 @@ class LinkedinEasyApply:
             writer = csv.writer(f)
             writer.writerow(to_write)
 
-    def record_unprepared_question(self, answer_type, question_text):
-        to_write = [answer_type, question_text]
-        file_path = self.unprepared_questions_file_name + ".csv"
+    @staticmethod
+    def record_unprepared_question(answer_type, question_text):
+        to_write = f"{answer_type}: {question_text}\n"
+        file_path = os.path.expanduser("~/Documents/Applications/EasyApplyBot/EasyApplyBot/unprepared_questions.txt")
 
         try:
-            with open(file_path, 'a') as f:
-                writer = csv.writer(f)
-                writer.writerow(to_write)
-                print(f'Updated {file_path} with {to_write}.')
-        except:
-            print(
-                "Special characters in questions are not allowed. Failed to update unprepared questions log.")
+            with open(file_path, 'a', encoding='utf-8') as f:
+                f.write(to_write)
+                print(f'Updated {file_path} with {to_write.strip()}.')
+        except Exception as e:
+            print("Failed to update unprepared questions log.")
             print(question_text)
+            print(e)
 
     def scroll_slow(self, scrollable_element, start=0, end=3600, step=100, reverse=False):
         if reverse:
