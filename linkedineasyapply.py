@@ -274,25 +274,22 @@ class LinkedinEasyApply:
                         done_applying = self.apply_to_job()
                         if done_applying:
                             print(f"Application sent to {company} for the position of {job_title}.")
+                            self.file_name = "output"
+                            self.write_to_file(company, job_title, link, job_location, location)
                         else:
-                            print(f"An application for a job at {company} has been submitted earlier.")
-                    except:
-                        temp = self.file_name
+                            # Esto puede ocurrir si el trabajo ya fue aplicado o no es "Easy Apply".
+                            # No lo registramos como éxito ni como fallo.
+                            print(f"Skipping job at {company}, already applied or not an Easy Apply job.")
+                    except Exception as e:
+                        print(f"Failed to apply to job at {company}. Error: {e}")
                         self.file_name = "failed"
-                        print("Failed to apply to job. Please submit a bug report with this link: " + link)
                         try:
                             self.write_to_file(company, job_title, link, job_location, location)
-                        except:
-                            pass
-                        self.file_name = temp
-                        print(f'updated {temp}.')
+                        except Exception as write_error:
+                            print(f"Error writing to failed.csv: {write_error}")
+                        # Restaurar el nombre de archivo para la siguiente iteración
+                        self.file_name = "output"
 
-                    try:
-                        self.write_to_file(company, job_title, link, job_location, location)
-                    except Exception:
-                        print(
-                            f"Unable to save the job information in the file. The job title {job_title} or company {company} cannot contain special characters,")
-                        traceback.print_exc()
                 except:
                     traceback.print_exc()
                     print(f"Could not apply to the job in {company}")
@@ -335,6 +332,14 @@ class LinkedinEasyApply:
         submit_application_text = 'submit application'
         while submit_application_text not in button_text.lower():
             try:
+                # --- INICIO DE LA MODIFICACIÓN ---
+                # Comprobar si el modal de éxito ya está visible
+                page_source = self.browser.page_source.lower()
+                if 'solicitud enviada' in page_source or 'application sent' in page_source:
+                    print("Modal de 'Solicitud enviada' detectado. Finalizando aplicación.")
+                    break # Salir del bucle, la aplicación fue exitosa
+                # --- FIN DE LA MODIFICACIÓN ---
+
                 self.fill_up()
                 next_button = self.browser.find_element(By.CLASS_NAME, "artdeco-button--primary")
                 button_text = next_button.text.lower()
@@ -381,6 +386,12 @@ class LinkedinEasyApply:
                 if any(error in self.browser.page_source.lower() for error in error_messages):
                     raise Exception("Failed answering required questions or uploading required files.")
             except:
+                # Si hay una excepción, comprobamos una última vez si fue porque la solicitud se envió
+                page_source = self.browser.page_source.lower()
+                if 'solicitud enviada' in page_source or 'application sent' in page_source:
+                    print("Excepción manejada: Modal de 'Solicitud enviada' detectado. Finalizando aplicación.")
+                    break # Salir del bucle, la aplicación fue exitosa
+
                 traceback.print_exc()
                 self.browser.find_element(By.CLASS_NAME, 'artdeco-modal__dismiss').click()
                 time.sleep(random.uniform(3, 5))
@@ -391,7 +402,11 @@ class LinkedinEasyApply:
         closed_notification = False
         time.sleep(random.uniform(3, 5))
         try:
-            self.browser.find_element(By.CLASS_NAME, 'artdeco-modal__dismiss').click()
+            # Usar un WebDriverWait para dar tiempo a que el botón aparezca
+            dismiss_button = WebDriverWait(self.browser, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "button[aria-label='Descartar'], button[aria-label='Dismiss']"))
+            )
+            dismiss_button.click()
             closed_notification = True
         except:
             pass
@@ -1028,26 +1043,59 @@ class LinkedinEasyApply:
 
     def write_to_file(self, company, job_title, link, location, search_location):
         to_write = [company, job_title, link, location, search_location, datetime.now()]
-        file_path = self.file_name + ".csv"
-        print(f'updated {file_path}.')
-
-        with open(file_path, 'a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            writer.writerow(to_write)
+        
+        # Asegúrate de que el directorio existe
+        output_dir = self.output_file_directory
+        os.makedirs(output_dir, exist_ok=True)
+        
+        file_path = os.path.join(output_dir, f"{self.file_name}.csv")
+        print(f'Updating {file_path}.')
+    
+        try:
+            with open(file_path, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow(to_write)
+            print(f'Successfully updated {file_path}.')
+        except Exception as e:
+            print(f"Error writing to {file_path}: {e}")
 
     @staticmethod
     def record_unprepared_question(answer_type, question_text):
-        to_write = f"{answer_type}: {question_text}\n"
-        file_path = os.path.expanduser("~/Documents/Applications/EasyApplyBot/EasyApplyBot/unprepared_questions.txt")
-
+        # Preparar la información a guardar
+        to_write_txt = f"{answer_type}: {question_text}\n"
+        to_write_csv = [answer_type, question_text, datetime.now()]
+        
+        # Asegurarse de que el directorio existe
+        dir_path = "D:\\Documents\\Proyectos\\EasyApplyBot-master"
+        # También puedes usar barras normales:
+        # dir_path = "D:/Brayam/Proyectos/EasyApplyBot-master"
+        os.makedirs(dir_path, exist_ok=True)
+        
+        # Ruta para el archivo TXT
+        txt_file_path = os.path.join(dir_path, "unprepared_questions.txt")
+        
+        # Ruta para el archivo CSV
+        csv_file_path = os.path.join(dir_path, "unprepared_questions.csv")
+        
+        # Guardar en archivo TXT
         try:
-            with open(file_path, 'a', encoding='utf-8') as f:
-                f.write(to_write)
-                print(f'Updated {file_path} with {to_write.strip()}.')
+            with open(txt_file_path, 'a', encoding='utf-8') as f:
+                f.write(to_write_txt)
+            print(f'Updated {txt_file_path} with {to_write_txt.strip()}.')
         except Exception as e:
-            print("Failed to update unprepared questions log.")
-            print(question_text)
-            print(e)
+            print(f"Failed to update {txt_file_path}: {e}")
+        
+        # Guardar en archivo CSV
+        try:
+            file_exists = os.path.isfile(csv_file_path)
+            with open(csv_file_path, 'a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                if not file_exists:
+                    writer.writerow(["Type", "Question", "Timestamp"])  # Escribir encabezado si es nuevo
+                writer.writerow(to_write_csv)
+            print(f'Updated {csv_file_path}.')
+        except Exception as e:
+            print(f"Failed to update {csv_file_path}: {e}")
 
     def scroll_slow(self, scrollable_element, start=0, end=3600, step=100, reverse=False):
         if reverse:
