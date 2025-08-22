@@ -672,12 +672,29 @@ class LinkedinEasyApply:
                     else:
                         to_enter = str(self.notice_period)
 
-                elif 'salary' in question_text or 'expectation' in question_text or 'compensation' in question_text or 'CTC' in question_text:
-                    if text_field_type == 'numeric':
-                        to_enter = int(self.salary_minimum)
-                    else:
-                        to_enter = float(self.salary_minimum)
-                    self.record_unprepared_question(text_field_type, question_text)
+                elif ('salary' in question_text or 
+                        'expectation' in question_text or 
+                        'compensation' in question_text or 
+                        'CTC' in question_text or
+                        'aspiración salarial' in question_text or
+                        'pretensión salarial' in question_text or
+                        'expectativa salarial' in question_text or
+                        'mayor a 0.0' in question_text):
+                        # Si la pregunta contiene "mayor a 0.0", asegurarnos de que el valor sea positivo
+                        salary_value = int(self.salary_minimum)
+                        if salary_value <= 0:
+                            salary_value = 1200  # Valor por defecto en caso de que la configuración tenga 0
+                        
+                        if text_field_type == 'numeric':
+                            to_enter = salary_value
+                        else:
+                            # Para campos de texto, podemos agregar formato específico o detalles adicionales
+                            if 'detalle' in question_text:
+                                to_enter = f"{salary_value} USD mensuales, pero estoy abierto a negociación según los beneficios del cargo."
+                            else:
+                                to_enter = str(salary_value)
+                        
+                        self.record_unprepared_question(text_field_type, question_text)
 
                 if text_field_type == 'numeric':
                     if not isinstance(to_enter, (int, float)):

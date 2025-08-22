@@ -329,6 +329,8 @@ experience:
  Production Deployments: 1
  AWS Debugging: 8  # Escala del 1-10, ajusta según tu nivel real
  AWS Production Issues: 8
+ Documentación Técnica: 1  # Ajusta este valor según tu experiencia real (0-99)
+ Technical Documentation: 1
 
 
 
