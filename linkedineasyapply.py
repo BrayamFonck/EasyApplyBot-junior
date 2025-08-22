@@ -449,6 +449,13 @@ class LinkedinEasyApply:
         questions = form.find_elements(By.CLASS_NAME, 'fb-dash-form-element')
         for question in questions:
             try:
+                # Asigna question_text al inicio
+                question_text = ""
+                try:
+                    question_text = question.find_element(By.TAG_NAME, 'label').text.lower()
+                except:
+                    pass
+
                 # Radio check
                 radio_fieldset = question.find_element(By.TAG_NAME, 'fieldset')
                 question_span = radio_fieldset.find_element(By.CLASS_NAME, 'fb-dash-form-element__label').find_elements(By.TAG_NAME, 'span')[0]
@@ -503,7 +510,7 @@ class LinkedinEasyApply:
                 elif 'urgent' in radio_text:
                     answer = self.get_answer('urgentFill')
 
-                elif 'commut' in radio_text or 'on-site' in radio_text or 'hybrid' in radio_text or 'onsite' in radio_text:
+                elif 'commut' in question_text or 'on-site' in question_text or 'hybrid' in question_text or 'onsite' in question_text or 'presencial' in question_text:
                     answer = self.get_answer('commute')
 
                 elif 'remote' in radio_text:
@@ -666,10 +673,14 @@ class LinkedinEasyApply:
                 options = [options.text for options in select.options]
                 print(f"Dropdown options: {options}")  # TODO: Put logging behind debug flag
 
-                if 'proficiency' in question_text:
+                if ('proficiency' in question_text or
+                    'nivel de inglés' in question_text or
+                    'nivel de idioma' in question_text or
+                    'english' in question_text or
+                    'inglés' in question_text):
                     proficiency = "None"
                     for language in self.languages:
-                        if language.lower() in question_text:
+                        if language.lower() in question_text or language.lower() in ['english', 'inglés']:
                             proficiency = self.languages[language]
                             break
                     self.select_dropdown(dropdown_field, proficiency)
