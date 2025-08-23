@@ -624,6 +624,36 @@ class LinkedinEasyApply:
                         # Usar la primera opción como fallback
                         answer = radio_options[0] if radio_options else 'no'
                 
+                elif 'nivel educativo' in radio_text or 'último nivel educativo' in radio_text or 'educational level' in radio_text or 'highest level of education' in radio_text:
+                    # Buscar la opción "profesional" o equivalentes
+                    answer = 'profesional'  # Por defecto
+                    
+                    # Buscar opciones que contengan "profesional", "bachelor", "degree", etc.
+                    for option in radio_options:
+                        if any(keyword in option.lower() for keyword in ['profesional', 'bachelor', 'degree', 'university', 'universitario']):
+                            answer = option
+                            break
+                    
+                    # Si no encuentra "profesional", usar la configuración de grados completados
+                    if answer == 'profesional':
+                        # Verificar qué grados tienes completados en la configuración
+                        if 'Bachelor\'s Degree' in self.checkboxes['degreeCompleted']:
+                            # Buscar opciones relacionadas con educación universitaria
+                            for option in radio_options:
+                                if 'profesional' in option.lower():
+                                    answer = option
+                                    break
+                        else:
+                            # Si no tienes Bachelor's, registrar como pregunta no preparada
+                            self.record_unprepared_question("radio", radio_text)
+
+                elif 'level of education' in radio_text:
+                    # Para otras preguntas de nivel educativo en inglés
+                    for degree in self.checkboxes['degreeCompleted']:
+                        if degree.lower() in radio_text:
+                            answer = "yes"
+                            break
+                
                 elif 'experience' in radio_text:
                     # Para otras preguntas de experiencia más generales
                     answer = 'no'
