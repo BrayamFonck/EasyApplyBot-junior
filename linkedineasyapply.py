@@ -567,7 +567,9 @@ class LinkedinEasyApply:
                     'how many years of experience' in radio_text or
                     'years of experience' in radio_text or
                     'experiencia tienes como' in radio_text or
-                    'experiencia tienes con' in radio_text):
+                    'experiencia tienes con' in radio_text or
+                    'experience with' in radio_text or
+                    'experience in' in radio_text):
                     # Buscar si tenemos experiencia configurada para esta tecnología
                     answer = 'no'  # Por defecto
                     experience_years = 0
@@ -653,6 +655,18 @@ class LinkedinEasyApply:
                         if degree.lower() in radio_text:
                             answer = "yes"
                             break
+                
+                elif 'amazon web services' in radio_text or 'aws' in radio_text:
+                    experience_years = self.experience.get('AWS', self.experience.get('amazon web services', 0))
+                    answer = 'yes' if experience_years > 0 else 'no'
+
+                elif 'microservicios' in radio_text or 'microservices' in radio_text:
+                    experience_years = self.experience.get('microservicios', self.experience.get('microservices', 0))
+                    answer = 'yes' if experience_years > 0 else 'no'
+
+                elif '.net apis' in radio_text or 'net apis' in radio_text:
+                    experience_years = self.experience.get('.net apis', self.experience.get('net apis', 0))
+                    answer = 'yes' if experience_years > 0 else 'no'
                 
                 elif 'experience' in radio_text:
                     # Para otras preguntas de experiencia más generales
@@ -1083,6 +1097,33 @@ class LinkedinEasyApply:
                             choice = option
                     if choice == "":
                         choice = options[len(options) - 1]
+                    self.select_dropdown(dropdown_field, choice)
+                
+                elif ('english level' in question_text and ('b2' in question_text or 'c1' in question_text)) or \
+                    ('willing to take a test' in question_text and 'english' in question_text) or \
+                    ('validate your english proficiency' in question_text) or \
+                    ('test to validate' in question_text and 'english' in question_text):
+                    # Evaluar si está dispuesto a tomar una prueba de inglés basándose en su nivel
+                    answer = 'no'  # Por defecto
+                    
+                    if 'english' in self.languages:
+                        proficiency_level = self.languages['english'].lower()
+                        # Si el nivel es Professional o Native, está dispuesto a tomar la prueba
+                        if proficiency_level in ['professional', 'native or bilingual']:
+                            answer = 'yes'
+                        # Si es Conversational, también puede estar dispuesto dependiendo del contexto
+                        elif proficiency_level == 'conversational':
+                            answer = 'yes'  # Puedes cambiar esto a 'no' si prefieres ser más conservador
+                    
+                    choice = ""
+                    for option in options:
+                        if answer.lower() in option.lower():
+                            choice = option
+                            break
+                    
+                    if choice == "":
+                        choice = options[-1]  # Usar la última opción como fallback
+                    
                     self.select_dropdown(dropdown_field, choice)
                 
                 elif 'experience' in question_text or 'understanding' in question_text or 'familiar' in question_text or 'comfortable' in question_text or 'able to' in question_text:
