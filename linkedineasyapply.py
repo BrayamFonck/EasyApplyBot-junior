@@ -1137,6 +1137,30 @@ class LinkedinEasyApply:
                     
                     self.select_dropdown(dropdown_field, choice)
 
+                elif ('communication skills' in question_text and 'english' in question_text) or \
+                    ('verbal and written' in question_text and 'english' in question_text) or \
+                    ('excellent' in question_text and 'communication' in question_text and 'english' in question_text):
+                    # Evaluar el nivel de inglés para determinar si tiene excelentes habilidades de comunicación
+                    answer = 'si'  # Por defecto
+                    
+                    if 'english' in self.languages:
+                        proficiency_level = self.languages['english'].lower()
+                        # Si el nivel es Professional o Native, asumir que tiene excelentes habilidades
+                        if proficiency_level in ['professional', 'native or bilingual']:
+                            answer = 'yes'
+                    
+                    choice = ""
+                    for option in options:
+                        if answer.lower() in option.lower():
+                            choice = option
+                            break
+                    
+                    if choice == "":
+                        choice = options[-1]  # Usar la última opción como fallback
+                    
+                    self.select_dropdown(dropdown_field, choice)
+
+                
                 else:
                     choice = ""
                     for option in options:
