@@ -1151,7 +1151,7 @@ class LinkedinEasyApply:
                       'minimum c2' in question_text or
                       'minimum b2' in question_text):
                     # Determinar el nivel del idioma basado en la configuración
-                    answer = 'si'  # Por defecto
+                    answer = 'yes'  # Por defecto
                     
                     # Buscar el idioma específico en la pregunta
                     if 'english' in question_text or 'inglés' in question_text:
